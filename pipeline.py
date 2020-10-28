@@ -3,12 +3,12 @@ import kfp.compiler as compiler
 import sys
 
 
-def train(volume_op):
+def train(volume_op, epochs):
     return dsl.ContainerOp(
         name="train",
         image="anbn1/anbn-kube",
         command=["python", "run_mnist.py"],
-        arguments=["--train", "/mnt/trained_model.h5"],
+        arguments=["--train", "/mnt/trained_model.h5", "--epochs", epochs],
         pvolumes={"/mnt": volume_op.volume},
         file_outputs = { "model": "/mnt/trained_model.h5" }
     )
@@ -34,10 +34,10 @@ def pipeline_volume(size="1Gi"):
 
 
 @dsl.pipeline(name="my_mnist_pipeline", description="")
-def create_pipeline():
+def create_pipeline(epochs:int=8):
     volume_op = pipeline_volume()
 
-    train_step = train(volume_op)
+    train_step = train(volume_op, epochs=epochs)
     test_step = test(volume_op)
 
     test_step.after(train_step)

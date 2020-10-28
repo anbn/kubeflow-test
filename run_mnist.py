@@ -1,4 +1,6 @@
 import sys
+import json
+import argparse
 
 import tensorflow as tf
 from tensorflow.keras.models import load_model, save_model
@@ -28,14 +30,23 @@ def get_model():
     return model
 
 
-def train(model_filename):
+def train(model_filename, epochs):
     model = get_model()
     x_train, x_test, y_train, y_test = load_dataset()
     model.compile(
         optimizer="adam", loss=loss_fn, metrics=["sparse_categorical_accuracy"]
     )
-    model.fit(x_train, y_train, epochs=5)
+    tbCallBack = tf.keras.callbacks.TensorBoard(log_dir="/log_dir", write_images=True)
+    model.fit(x_train, y_train, epochs=epochs, callbacks=None)
     model.save(model_filename)
+    #metadata = {
+    #    'outputs' : [{
+    #        'type': 'tensorboard',
+    #        'source': "/log_dir"
+    #    }]
+    #}
+    #with open('/mlpipeline-ui-metadata.json', 'w') as f:
+    #    json.dump(metadata, f)
     result = model.evaluate(x_test, y_test, verbose=2)
     print(result)
 
@@ -55,11 +66,16 @@ def test(model_filename):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        sys.exit(1)
-    if sys.argv[1] == "--train":
-        train(sys.argv[2])
-    elif sys.argv[1] == "--test":
-        test(sys.argv[2])
+
+    parser = argparse.ArgumentParser(allow_abbrev=False)
+    parser.add_argument("--epochs", type=int, default=8)
+    parser.add_argument("--train", type=str, default=None)
+    parser.add_argument("--test", type=str, default=None)
+    args = parser.parse_args()
+
+    if not args.train is None:
+        train(args.train, args.epochs)
+    elif not args.test is None:
+        test(args.test)
     else:
         raise ValueError("choose either train or test")
