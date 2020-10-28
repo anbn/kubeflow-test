@@ -1,8 +1,13 @@
-import tensorflow as tf
 import sys
+
+import tensorflow as tf
 from tensorflow.keras.models import load_model, save_model
+from sklearn.metrics import confusion_matrix
+
+import numpy as np
 
 loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+
 
 def load_dataset():
     mnist = tf.keras.datasets.mnist
@@ -10,30 +15,44 @@ def load_dataset():
     x_train, x_test = x_train / 255.0, x_test / 255.0
     return x_train, x_test, y_train, y_test
 
+
 def get_model():
-    model = tf.keras.models.Sequential([
-        tf.keras.layers.Flatten(input_shape=(28, 28)),
-        tf.keras.layers.Dense(128, activation='relu'),
-        tf.keras.layers.Dropout(0.2),
-        tf.keras.layers.Dense(10)
-    ])
+    model = tf.keras.models.Sequential(
+        [
+            tf.keras.layers.Flatten(input_shape=(28, 28)),
+            tf.keras.layers.Dense(128, activation="relu"),
+            tf.keras.layers.Dropout(0.2),
+            tf.keras.layers.Dense(10),
+        ]
+    )
     return model
+
 
 def train(model_filename):
     model = get_model()
     x_train, x_test, y_train, y_test = load_dataset()
-    model.compile(optimizer='adam', loss=loss_fn, metrics=['sparse_categorical_accuracy'])
+    model.compile(
+        optimizer="adam", loss=loss_fn, metrics=["sparse_categorical_accuracy"]
+    )
     model.fit(x_train, y_train, epochs=5)
     model.save(model_filename)
     result = model.evaluate(x_test, y_test, verbose=2)
     print(result)
+
 
 def test(model_filename):
     model = load_model(model_filename)
     model.summary()
     x_train, x_test, y_train, y_test = load_dataset()
     result = model.evaluate(x_test, y_test, verbose=2)
+    y_predicted = model.predict(x_test)
+    conf_mat = confusion_matrix(
+        y_test, np.argmax(y_predicted, axis=1), labels=range(10)
+    )
+
+    print(conf_mat)
     print(result)
+
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
