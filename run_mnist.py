@@ -61,6 +61,23 @@ def test(model_filename):
         y_test, np.argmax(y_predicted, axis=1), labels=range(10)
     )
 
+    np.savetxt("/conf_mat.csv", conf_mat, '%s', delimiter=",")
+    metadata = {
+        'outputs' : [{
+            'type': 'confusion_matrix',
+            'format': 'csv',
+            'schema': [
+            {'name': 'target', 'type': 'CATEGORY'},
+            {'name': 'predicted', 'type': 'CATEGORY'},
+            {'name': 'count', 'type': 'NUMBER'},
+            ],
+            'source': '/conf_mat.csv',
+            'labels': list(map(str, range(10))),
+        }]
+    }
+    with open('/mlpipeline-ui-metadata.json', 'w') as f:
+        json.dump(metadata, f)
+
     print(conf_mat)
     print(result)
 
